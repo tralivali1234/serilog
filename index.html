@@ -43,9 +43,9 @@
 <pre><code>PM&gt; Install-Package Serilog.Sinks.CouchDB
 </code></pre>
 
-<h3>A no nonsense logging library</h3>
+<h3>A no-nonsense logging library</h3>
 
-<p>Serilog is simple to configure and use via a simple C# API. <em>No XML configuration support is currently implemented - if you need XML configuration you'll need to pull values from <code>System.Configuration</code> by hand.</em></p>
+<p>Serilog is simple to configure and use via its C# API. <em>No XML configuration support is currently implemented - if you require XML configuration you'll need to pull values from <code>System.Configuration</code> by hand.</em></p>
 
 <p>Types are in the <code>Serilog</code> namespace.</p>
 
@@ -60,14 +60,15 @@
     .CreateLogger();
 </code></pre>
 
-<p>If you prefer a global, statically accessible log, set <code>Log.Logger</code>.</p>
+<p>Log messages are written using a familiar API.</p>
 
-<pre><code>Log.Logger = log;
+<pre><code>log.Information("Hello, world!");
 </code></pre>
 
-<p>Log messages are written via a <code>log</code> variable or via the <code>Log</code> class, using a familiar API.</p>
+<p>Serilog's global, statically accessible logger, is set via <code>Log.Logger</code> and can be invoked using the static methods on the <code>Log</code> class.</p>
 
-<pre><code>Log.Information("Hello, world!");
+<pre><code>Log.Logger = log;
+Log.Debug("The global logger has been configured.")
 </code></pre>
 
 <h3>For the NoSQL era</h3>
