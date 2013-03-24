@@ -35,13 +35,13 @@
 
 <p>The core logging package is <a href="http://nuget.org/packages/Serilog">Serilog</a>.</p>
 
-<pre><code>PM&gt; Install-Package Serilog
-</code></pre>
+<div class="highlight"><pre><span class="n">PM</span><span class="p">&gt;</span> <span class="n">Install-Package</span> <span class="n">Serilog</span>
+</pre></div>
 
 <p>The sample CouchDB sink is <a href="http://nuget.org/packages/Serilog.Sinks.CouchDB">Serilog.Sinks.CouchDB</a>.</p>
 
-<pre><code>PM&gt; Install-Package Serilog.Sinks.CouchDB
-</code></pre>
+<div class="highlight"><pre><span class="n">PM</span><span class="p">&gt;</span> <span class="n">Install-Package</span> <span class="n">Serilog</span><span class="p">.</span><span class="n">Sinks</span><span class="p">.</span><span class="n">CouchDB</span>
+</pre></div>
 
 <h3>A no-nonsense logging library</h3>
 
@@ -49,51 +49,51 @@
 
 <p>Types are in the <code>Serilog</code> namespace.</p>
 
-<pre><code>using Serilog;
-</code></pre>
+<div class="highlight"><pre><span class="k">using</span> <span class="nn">Serilog</span><span class="p">;</span>
+</pre></div>
 
 <p>An <code>ILogger</code> is created using <code>LoggerConfiguration</code>.</p>
 
-<pre><code>var log = new LoggerConfiguration()
-    .WithDiagnosticTraceSink()
-    .WithCouchDBSink("http://couch.example.com/log")
-    .CreateLogger();
-</code></pre>
+<div class="highlight"><pre><span class="kt">var</span> <span class="n">log</span> <span class="p">=</span> <span class="k">new</span> <span class="n">LoggerConfiguration</span><span class="p">()</span>
+    <span class="p">.</span><span class="n">WithDiagnosticTraceSink</span><span class="p">()</span>
+    <span class="p">.</span><span class="n">WithCouchDBSink</span><span class="p">(</span><span class="s">"http://couch.example.com/log"</span><span class="p">)</span>
+    <span class="p">.</span><span class="n">CreateLogger</span><span class="p">();</span>
+</pre></div>
 
 <p>Log messages are written using a familiar API.</p>
 
-<pre><code>log.Information("Hello, world!");
-</code></pre>
+<div class="highlight"><pre><span class="n">log</span><span class="p">.</span><span class="n">Information</span><span class="p">(</span><span class="s">"Hello, world!"</span><span class="p">);</span>
+</pre></div>
 
 <p>Serilog's global, statically accessible logger, is set via <code>Log.Logger</code> and can be invoked using the static methods on the <code>Log</code> class.</p>
 
-<pre><code>Log.Logger = log;
-Log.Debug("The global logger has been configured.")
-</code></pre>
+<div class="highlight"><pre><span class="n">Log</span><span class="p">.</span><span class="n">Logger</span> <span class="p">=</span> <span class="n">log</span><span class="p">;</span>
+<span class="n">Log</span><span class="p">.</span><span class="n">Debug</span><span class="p">(</span><span class="s">"The global logger has been configured."</span><span class="p">)</span>
+</pre></div>
 
 <h3>For the NoSQL era</h3>
 
 <p>Unlike other logging libraries for .NET, parameters passed along with log messages are not destructively rendered into a text format. Instead, they're preserved as structured data, that can be written in document form to a store like CouchDB.</p>
 
-<pre><code>var sensorInput = new { Latitude = 25, Longitude = 134 };
-var processingTimeMs = 34;
+<div class="highlight"><pre><span class="kt">var</span> <span class="n">sensorInput</span> <span class="p">=</span> <span class="k">new</span> <span class="p">{</span> <span class="n">Latitude</span> <span class="p">=</span> <span class="m">25</span><span class="p">,</span> <span class="n">Longitude</span> <span class="p">=</span> <span class="m">134</span> <span class="p">};</span>
+<span class="kt">var</span> <span class="n">processingTimeMs</span> <span class="p">=</span> <span class="m">34</span><span class="p">;</span>
 
-Log.Information("Processed {@SensorInput} in {TimeMS:000} ms.", sensorInput, processingTimeMs);
-</code></pre>
+<span class="n">Log</span><span class="p">.</span><span class="n">Information</span><span class="p">(</span><span class="s">"Processed {@SensorInput} in {TimeMS:000} ms."</span><span class="p">,</span> <span class="n">sensorInput</span><span class="p">,</span> <span class="n">processingTimeMs</span><span class="p">);</span>
+</pre></div>
 
-<p>Serilog message templates use a simple DSL in place of the regular (<code>{0}</code> etc.) .NET format strings. Properties are named within the message template, and matched positionally with the arguments provided to the log method.</p>
+<p>Serilog message templates use a simple DSL that extends the regular .NET format strings. Properties are named within the message template, and matched positionally with the arguments provided to the log method.</p>
 
 <p>This example records two properties, <code>SensorInput</code> and <code>TimeMS</code> along with the log event.</p>
 
-<p>The <code>@</code> symbol in front of <code>SensorInput</code> instructs Serilog to preserve the structure of the object passed in; by default, Serilog only recognises simple types like <code>string</code>, <code>int</code> and enumerables. All other objects are converted into strings using <code>ToString</code>. The properties captured in the example, in JSON format, would appear like:</p>
+<p>The <code>@</code> symbol in front of <code>SensorInput</code> instructs Serilog to preserve the structure of the object passed in. Where this is omitted, Serilog recognises simple types like <code>string</code>, <code>int</code> and enumerables; all other objects are converted into strings using <code>ToString()</code>. The properties captured in the example, in JSON format, would appear like:</p>
 
-<pre><code>{ "SensorInput": { "Latitude": 25, "Longitude": 134 },
-  "TimeMS": 34 }
-</code></pre>
+<div class="highlight"><pre><span class="p">{</span> <span class="s2">"SensorInput"</span><span class="o">:</span> <span class="p">{</span> <span class="s2">"Latitude"</span><span class="o">:</span> <span class="mi">25</span><span class="p">,</span> <span class="s2">"Longitude"</span><span class="o">:</span> <span class="mi">134</span> <span class="p">},</span>
+  <span class="s2">"TimeMS"</span><span class="o">:</span> <span class="mi">34</span> <span class="p">}</span>
+</pre></div>
 
 <p>The <code>:000</code> segment following <code>TimeMS</code> is a standard .NET format string that affects how the property is rendered (not how it is captured). The standard console sink included with Serilog will render the above message as:</p>
 
-<pre><code>[...] Information: Processed { Latitude: 25, Longitude: 134 } in 034 ms. 
+<pre><code>... [Information] Processed { Latitude: 25, Longitude: 134 } in 034 ms. 
 </code></pre>
         </section>
 
@@ -102,7 +102,17 @@ Log.Information("Processed {@SensorInput} in {TimeMS:000} ms.", sensorInput, pro
           This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.
         </footer>
 
-        
+                  <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-2985547-8");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
       </div>
     </div>
   </body>
