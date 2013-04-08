@@ -33,7 +33,7 @@
         <section id="main_content">
           <h3>Installing from NuGet</h3>
 
-<p>The core logging package is <a href="http://nuget.org/packages/Serilog">Serilog</a>.</p>
+<p>The core logging package is <a href="http://nuget.org/packages/Serilog">Serilog</a>. The supported platforms are .NET 4.5, Windows 8 (WinRT) and Windows Phone 8.</p>
 
 <div class="highlight"><pre><span class="n">PM</span><span class="p">&gt;</span> <span class="n">Install-Package</span> <span class="n">Serilog</span>
 </pre></div>
@@ -45,7 +45,7 @@
 
 <h3>A no-nonsense logging library</h3>
 
-<p>Serilog is simple to configure and use via its C# API. <em>No XML configuration support is currently implemented - if you require XML configuration you'll need to pull values from <code>System.Configuration</code> by hand.</em></p>
+<p>Serilog is simple to configure and use via its C# API. <em>No XML configuration support is implemented - if you require XML configuration you'll need to pull values from <code>System.Configuration</code> by hand.</em></p>
 
 <p>Types are in the <code>Serilog</code> namespace.</p>
 
@@ -55,8 +55,8 @@
 <p>An <code>ILogger</code> is created using <code>LoggerConfiguration</code>.</p>
 
 <div class="highlight"><pre><span class="kt">var</span> <span class="n">log</span> <span class="p">=</span> <span class="k">new</span> <span class="n">LoggerConfiguration</span><span class="p">()</span>
-    <span class="p">.</span><span class="n">WithDiagnosticTraceSink</span><span class="p">()</span>
-    <span class="p">.</span><span class="n">WithCouchDBSink</span><span class="p">(</span><span class="s">"http://couch.example.com/log"</span><span class="p">)</span>
+    <span class="p">.</span><span class="n">WriteTo</span><span class="p">.</span><span class="n">DiagnosticTrace</span><span class="p">()</span>
+    <span class="p">.</span><span class="n">WriteTo</span><span class="p">.</span><span class="n">CouchDB</span><span class="p">(</span><span class="s">"http://couch.example.com/log"</span><span class="p">)</span>
     <span class="p">.</span><span class="n">CreateLogger</span><span class="p">();</span>
 </pre></div>
 
