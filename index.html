@@ -31,75 +31,60 @@
         <hr>
 
         <section id="main_content">
-          <h3>Installing from NuGet</h3>
+          <h2>
+<a name="why-serilog" class="anchor" href="#why-serilog"><span class="octicon octicon-link"></span></a>Why Serilog?</h2>
 
-<p>The core logging package is <a href="http://nuget.org/packages/Serilog">Serilog</a>. The supported platforms are .NET 4.5, Windows 8 (WinRT) and Windows Phone 8.</p>
+<p>Like other logging libraries for .NET, Serilog provides diagnostic logging to files, the console, and so-on. It is easy to set up, has a clean API, and is portable between recent .NET platforms.</p>
 
-<div class="highlight"><pre><span class="n">PM</span><span class="p">&gt;</span> <span class="n">Install-Package</span> <span class="n">Serilog</span>
-</pre></div>
-
-<p>The sample CouchDB sink is <a href="http://nuget.org/packages/Serilog.Sinks.CouchDB">Serilog.Sinks.CouchDB</a>.</p>
-
-<div class="highlight"><pre><span class="n">PM</span><span class="p">&gt;</span> <span class="n">Install-Package</span> <span class="n">Serilog</span><span class="p">.</span><span class="n">Sinks</span><span class="p">.</span><span class="n">CouchDB</span>
-</pre></div>
-
-<h3>A no-nonsense logging library</h3>
-
-<p>Serilog is simple to configure and use via its C# API. <em>No XML configuration support is implemented - if you require XML configuration you'll need to pull values from <code>System.Configuration</code> by hand.</em></p>
-
-<p>Types are in the <code>Serilog</code> namespace.</p>
-
-<div class="highlight"><pre><span class="k">using</span> <span class="nn">Serilog</span><span class="p">;</span>
-</pre></div>
-
-<p>An <code>ILogger</code> is created using <code>LoggerConfiguration</code>.</p>
-
-<div class="highlight"><pre><span class="kt">var</span> <span class="n">log</span> <span class="p">=</span> <span class="k">new</span> <span class="n">LoggerConfiguration</span><span class="p">()</span>
-    <span class="p">.</span><span class="n">WriteTo</span><span class="p">.</span><span class="n">DiagnosticTrace</span><span class="p">()</span>
-    <span class="p">.</span><span class="n">WriteTo</span><span class="p">.</span><span class="n">CouchDB</span><span class="p">(</span><span class="s">"http://couch.example.com/log"</span><span class="p">)</span>
-    <span class="p">.</span><span class="n">CreateLogger</span><span class="p">();</span>
-</pre></div>
-
-<p>Log messages are written using a familiar API.</p>
-
-<div class="highlight"><pre><span class="n">log</span><span class="p">.</span><span class="n">Information</span><span class="p">(</span><span class="s">"Hello, world!"</span><span class="p">);</span>
-</pre></div>
-
-<p>Serilog's global, statically accessible logger, is set via <code>Log.Logger</code> and can be invoked using the static methods on the <code>Log</code> class.</p>
-
-<div class="highlight"><pre><span class="n">Log</span><span class="p">.</span><span class="n">Logger</span> <span class="p">=</span> <span class="n">log</span><span class="p">;</span>
-<span class="n">Log</span><span class="p">.</span><span class="n">Debug</span><span class="p">(</span><span class="s">"The global logger has been configured."</span><span class="p">)</span>
-</pre></div>
-
-<h3>For the NoSQL era</h3>
-
-<p>Unlike other logging libraries for .NET, parameters passed along with log messages are not destructively rendered into a text format. Instead, they're preserved as structured data, that can be written in document form to a store like CouchDB.</p>
+<p>Unlike other logging libraries for .NET, parameters passed along with log messages are not destructively rendered into a text format. Instead, they're preserved as structured data, that can be written in document form to a NoSQL data store.</p>
 
 <div class="highlight"><pre><span class="kt">var</span> <span class="n">sensorInput</span> <span class="p">=</span> <span class="k">new</span> <span class="p">{</span> <span class="n">Latitude</span> <span class="p">=</span> <span class="m">25</span><span class="p">,</span> <span class="n">Longitude</span> <span class="p">=</span> <span class="m">134</span> <span class="p">};</span>
-<span class="kt">var</span> <span class="n">processingTimeMs</span> <span class="p">=</span> <span class="m">34</span><span class="p">;</span>
+<span class="kt">var</span> <span class="n">elapsedMs</span><span class="p">=</span> <span class="m">34</span><span class="p">;</span>
 
-<span class="n">Log</span><span class="p">.</span><span class="n">Information</span><span class="p">(</span><span class="s">"Processed {@SensorInput} in {TimeMS:000} ms."</span><span class="p">,</span> <span class="n">sensorInput</span><span class="p">,</span> <span class="n">processingTimeMs</span><span class="p">);</span>
+<span class="n">log</span><span class="p">.</span><span class="n">Information</span><span class="p">(</span><span class="s">"Processed {@SensorInput} in {Elapsed:000} ms."</span><span class="p">,</span> <span class="n">sensorInput</span><span class="p">,</span> <span class="n">elapsedMs</span><span class="p">);</span>
 </pre></div>
 
 <p>Serilog message templates use a simple DSL that extends the regular .NET format strings. Properties are named within the message template, and matched positionally with the arguments provided to the log method.</p>
 
-<p>This example records two properties, <code>SensorInput</code> and <code>TimeMS</code> along with the log event.</p>
+<p>This example records two properties, <code>SensorInput</code> and <code>Elapsed</code> along with the log event.</p>
 
-<p>The <code>@</code> symbol in front of <code>SensorInput</code> instructs Serilog to preserve the structure of the object passed in. Where this is omitted, Serilog recognises simple types like <code>string</code>, <code>int</code> and enumerables; all other objects are converted into strings using <code>ToString()</code>. The properties captured in the example, in JSON format, would appear like:</p>
+<p>The properties captured in the example, in JSON format, would appear like:</p>
 
-<div class="highlight"><pre><span class="p">{</span> <span class="s2">"SensorInput"</span><span class="o">:</span> <span class="p">{</span> <span class="s2">"Latitude"</span><span class="o">:</span> <span class="mi">25</span><span class="p">,</span> <span class="s2">"Longitude"</span><span class="o">:</span> <span class="mi">134</span> <span class="p">},</span>
-  <span class="s2">"TimeMS"</span><span class="o">:</span> <span class="mi">34</span> <span class="p">}</span>
+<div class="highlight"><pre><span class="p">{</span> <span class="s">"SensorInput"</span><span class="p">:</span> <span class="p">{</span> <span class="s">"Latitude"</span><span class="p">:</span> <span class="m">25</span><span class="p">,</span> <span class="s">"Longitude"</span><span class="p">:</span> <span class="m">134</span> <span class="p">},</span>
+  <span class="s">"Elapsed"</span><span class="p">:</span> <span class="m">34</span> <span class="p">}</span>
 </pre></div>
 
-<p>The <code>:000</code> segment following <code>TimeMS</code> is a standard .NET format string that affects how the property is rendered (not how it is captured). The standard console sink included with Serilog will render the above message as:</p>
+<p>The <code>@</code> operator in front of <code>SensorInput</code> instructs Serilog to preserve the structure of the object passed in. If this is omitted, Serilog recognises simple types like strings, numbers, dates and times, dictionaries and enumerables; all other objects are converted into strings using <code>ToString()</code>. 'Stringification' can be forced using the <code>$</code> operator in place of <code>@</code>.</p>
 
-<pre><code>... [Information] Processed { Latitude: 25, Longitude: 134 } in 034 ms. 
+<p>The <code>:000</code> segment following <code>Elapsed</code> is a standard .NET format string that affects how the property is rendered (not how it is captured). The standard console sink included with Serilog will render the above message as:</p>
+
+<pre><code>09:14:22 [Information] Processed { Latitude: 25, Longitude: 134 } in 034 ms. 
 </code></pre>
+
+<h2>
+<a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h2>
+
+<ul>
+<li><a href="https://github.com/nblumhardt/serilog/wiki/Getting-Started">Getting Started</a></li>
+<li><a href="https://github.com/nblumhardt/serilog/wiki/Configuration-Basics">Configuration Basics</a></li>
+<li><a href="https://github.com/nblumhardt/serilog/wiki/Writing-Log-Events">Writing Log Events</a></li>
+<li><a href="https://github.com/nblumhardt/serilog/wiki/Structured-Data">Structured Data</a></li>
+<li><a href="https://github.com/nblumhardt/serilog/wiki/Provided-Sinks">Provided Sinks</a></li>
+<li><a href="https://github.com/nblumhardt/serilog/wiki/Debugging-and-Diagnostics">Debugging and Diagnostics</a></li>
+</ul><h2>
+<a name="resources" class="anchor" href="#resources"><span class="octicon octicon-link"></span></a>Resources</h2>
+
+<ul>
+<li><a href="https://groups.google.com/group/serilog">Discussion forum</a></li>
+<li><a href="http://nblumhardt.com">Blog posts at nblumhardt.com</a></li>
+<li><a href="http://serilog.net">Project homepage</a></li>
+<li><a href="https://nuget.org/packages?q=Tags%3A%22serilog%22">Packages on NuGet</a></li>
+</ul>
         </section>
 
         <footer>
           Serilog is maintained by <a href="https://github.com/nblumhardt">nblumhardt</a><br>
-          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.
+          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
         </footer>
 
                   <script type="text/javascript">
