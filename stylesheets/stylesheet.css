@@ -69,7 +69,7 @@ header {
 }
 
 header h1 {
-  font-family: 'Chivo', 'Helvetica Neue', Helvetica, Arial, serif; font-weight: 900;
+  font-family: 'Consolas', 'Courier', Helvetica, Arial, serif; font-weight: 900;
   letter-spacing: -1px;
   font-size: 48px;
   color: #303030;
@@ -77,6 +77,7 @@ header h1 {
 }
 
 header h2 {
+  font-family: 'Calibri', Arial;
   letter-spacing: -1px;
   font-size: 24px;
   color: #aaa;
@@ -90,7 +91,7 @@ header h2 {
 }
 
 .inner {
-  width: 620px;
+  width: 800px;
   margin: 0 auto;
 }
 
@@ -103,9 +104,6 @@ header h2 {
 }
 
 a.button {
-  -moz-border-radius: 30px;
-  -webkit-border-radius: 30px;                     
-  border-radius: 30px;
   border-top: solid 1px #cbcbcb;
   border-left: solid 1px #b7b7b7;
   border-right: solid 1px #b7b7b7;
@@ -150,6 +148,10 @@ a.button span {
   padding-left: 50px;
   display: block;
   height: 23px;
+}
+
+#download-zip {
+  margin-left: 80px;
 }
 
 #download-zip span {
