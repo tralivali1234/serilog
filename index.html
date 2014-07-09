@@ -39,11 +39,7 @@
              has a clean API, and is portable between recent .NET platforms.</p>
 
           <p><em>Unlike</em> other logging libraries, Serilog is built with
-             <strong>structured log data</strong> in mind. Parameters passed
-             along with log messages are not destructively rendered into a text
-             format.
-             Instead, they're preserved as structured data that can be written
-             in document form to a NoSQL data store.</p>
+             powerful <strong>structured event data</strong> facilities.</p>
         </div>
       </div>
     </div>
@@ -54,8 +50,9 @@
         <div class="column full">
           <h3>Text formatting with a twist</h3>
           <p>Serilog <em>message templates</em> are a simple DSL extending
-             .NET format strings. Named properties make searching and filtering
-             log events easier than ever!</p>
+             .NET format strings. Parameters can be named, and their values
+             are serialized as properties on the event for incredible searching
+             and sorting flexibility:</p>
 
           <div class="pre"><span class="keyword">var</span> position = <span class="keyword">new</span> { Latitude = <span class="number">25</span>, Longitude = <span class="number">134</span> };
 <span class="keyword">var</span> elapsedMs = <span class="number">34</span>;
