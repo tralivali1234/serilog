@@ -1,0 +1,70 @@
+header {
+	background: #ff2518;
+	color: white;
+}
+
+h1, h2 {
+	font-family: 'Fira Sans', sans-serif;
+}
+
+h3 {
+	font-family: 'Reenie Beanie', cursive;
+}
+
+body, p, a {
+	font-family: 'Noto Serif', serif;
+	color: black;
+}
+
+a, a:active, a:focus, a:hover {
+	color: black;
+	text-decoration: none;
+	font-weight: bold;
+}
+
+#banner-logo {
+	width: 256px;
+	height: 256px;
+	background-image: url('../img/serilog.png')
+}
+
+.pre, code {
+	font-family: 'Inconsolata', monospace;
+}
+
+.pre {
+	background: #444;
+	color: white;
+	padding: 1rem;
+	border-radius: 5px;
+	white-space: pre-wrap;
+}
+
+.pre .string {
+	color: #ff2518;
+}
+
+.pre .keyword {
+	font-weight: bold;
+}
+
+.pre .token {
+	font-weight: bold;
+}
+
+.pre .number {
+	color: #6ED;
+}
+
+footer {
+	color: #DDD;
+	font-style: italic;
+	font-size: 80%;
+}
+
+.highlight {
+	background-color: rgba(47, 237, 111, 1);
+	border-radius: 3px;
+	padding-left: 0.1rem;
+	padding-right: 0.1rem;
+}

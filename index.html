@@ -1,112 +1,130 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <title>Serilog</title>
-  </head>
-
-  <body>
-    <div id="container">
-      <div class="inner">
-
-        <header>
-          <h1>Serilog</h1>
-          <h2>The best of traditional and structured logging for .NET</h2>
-        </header>
-
-        <section id="downloads" class="clearfix">
-          <a href="https://github.com/serilog/serilog/zipball/master" id="download-zip" class="button"><span>Download Source</span></a>
-          <a href="http://nuget.org/packages/serilog" id="view-on-nuget" class="button"><span>View on NuGet</span></a>
-          <a href="https://github.com/serilog/serilog" id="view-on-github" class="button"><span>View on GitHub</span></a>
-        </section>
-
-        <hr>
-
-        <section id="main_content">
-          <h2>
-
-<a name="why-serilog" class="anchor" href="#why-serilog"><span class="octicon octicon-link"></span></a>Why Serilog?</h2>
-
-<a style="float:right;margin-left:20px;" href="http://nuget.org/packages/serilog"><img style="width:120px;height:120px" src="images/serilog-nuget.png" alt="Serilog" title="Serilog" /></a>
-
-<p>Like other logging libraries for .NET, Serilog provides diagnostic logging to files, the console, and so-on. It is easy to set up, has a clean API, and is portable between recent .NET platforms.</p>
-
-<p>Unlike other logging libraries for .NET, Serilog is built with structured log data in mind. Parameters passed along with log messages are not destructively rendered into a text format. Instead, they're preserved as structured data that can be written in document form to a NoSQL data store.</p>
-
-<div class="highlight"><pre><span class="kt">var</span> <span class="n">sensorInput</span> <span class="p">=</span> <span class="k">new</span> <span class="p">{</span> <span class="n">Latitude</span> <span class="p">=</span> <span class="m">25</span><span class="p">,</span> <span class="n">Longitude</span> <span class="p">=</span> <span class="m">134</span> <span class="p">};</span>
-<span class="kt">var</span> <span class="n">elapsedMs</span><span class="p">=</span> <span class="m">34</span><span class="p">;</span>
-
-<span class="n">log</span><span class="p">.</span><span class="n">Information</span><span class="p">(</span><span class="s">"Processed {@SensorInput} in {Elapsed:000} ms."</span><span class="p">,</span> <span class="n">sensorInput</span><span class="p">,</span> <span class="n">elapsedMs</span><span class="p">);</span>
-</pre></div>
-
-<p>Serilog message templates use a simple DSL that extends regular .NET format strings. Using named properties in the message template makes searching and filtering log events easier than ever!</p>
-
-<p>This example records two properties, <code>SensorInput</code> and <code>Elapsed</code> along with the log event.</p>
-
-<p>The properties captured in the example, in JSON format, would appear like:</p>
-
-<div class="highlight"><pre><span class="p">{</span> <span class="s">"SensorInput"</span><span class="p">:</span> <span class="p">{</span> <span class="s">"Latitude"</span><span class="p">:</span> <span class="m">25</span><span class="p">,</span> <span class="s">"Longitude"</span><span class="p">:</span> <span class="m">134</span> <span class="p">},</span>
-  <span class="s">"Elapsed"</span><span class="p">:</span> <span class="m">34</span> <span class="p">}</span>
-</pre></div>
-
-<p>The <code>@</code> operator in front of <code>SensorInput</code> instructs Serilog to preserve the structure of the object passed in. If this is omitted, Serilog recognises simple types like strings, numbers, dates and times, dictionaries and enumerables; all other objects are converted into strings using <code>ToString()</code>. 'Stringification' can be forced using the <code>$</code> operator in place of <code>@</code>.</p>
-
-<p>The <code>:000</code> segment following <code>Elapsed</code> is a standard .NET format string that affects how the property is rendered (not how it is captured). The standard console sink included with Serilog will render the above message as:</p>
-
-<pre><code>09:14:22 [Information] Processed { Latitude: 25, Longitude: 134 } in 034 ms. 
-</code></pre>
-
-            <div style="width: 450px; margin-left: 20px; float: right;">
-<a class="twitter-timeline" data-dnt="true" href="https://twitter.com/search?q=%23Serilog" data-widget-id="431980247123111936">Tweets about "#Serilog"</a>
-<script>!function (d, s, id) { var js, fjs = d.getElementsByTagName(s)[0], p = /^http:/.test(d.location) ? 'http' : 'https'; if (!d.getElementById(id)) { js = d.createElement(s); js.id = id; js.src = p + "://platform.twitter.com/widgets.js"; fjs.parentNode.insertBefore(js, fjs); } }(document, "script", "twitter-wjs");</script>
-                </div>
-
-<h2>
-<a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h2>
-
-<ul>
-<li><a href="https://github.com/serilog/serilog/wiki/Getting-Started">Getting Started</a></li>
-<li><a href="https://github.com/serilog/serilog/wiki/Configuration-Basics">Configuration Basics</a></li>
-<li><a href="https://github.com/serilog/serilog/wiki/Writing-Log-Events">Writing Log Events</a></li>
-<li><a href="https://github.com/serilog/serilog/wiki/Structured-Data">Structured Data</a></li>
-<li><a href="https://github.com/serilog/serilog/wiki/Provided-Sinks">Provided Sinks</a></li>
-<li><a href="https://github.com/serilog/serilog/wiki/Debugging-and-Diagnostics">Debugging and Diagnostics</a></li>
-</ul><h2>
-<a name="resources" class="anchor" href="#resources"><span class="octicon octicon-link"></span></a>Resources</h2>
-
-<ul>
-<li><a href="https://groups.google.com/group/serilog">Discussion forum</a></li>
-<li><a href="http://nblumhardt.com">Blog posts at nblumhardt.com</a></li>
-<li><a href="http://serilog.net">Project homepage</a></li>
-<li><a href="https://nuget.org/packages?q=Tags%3A%22serilog%22">Packages on NuGet</a></li>
-</ul>
-        </section>
-
-        <footer style="margin-top: 260px;">
-          Serilog is maintained by <a href="http://continuousit.com">Continuous IT</a><br>
-          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
-        </footer>
-
-                  <script type="text/javascript">
-            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-          </script>
-          <script type="text/javascript">
-            try {
-              var pageTracker = _gat._getTracker("UA-2985547-8");
-            pageTracker._trackPageview();
-            } catch(err) {}
-          </script>
-
+<head lang="en">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="fragment" content="!">
+    <meta charset="UTF-8">
+    <title>Serilog &mdash; simple .NET logging with fully-structured events</title>
+    <link rel="stylesheet" type="text/css" href="theme/normalize.css" />
+    <link href='http://fonts.googleapis.com/css?family=Reenie+Beanie|Fira+Sans:500|Noto+Serif|Inconsolata' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="theme/grid.css" />
+    <link rel="stylesheet" type="text/css" href="theme/util.css" />
+    <link rel="stylesheet" type="text/css" href="theme/layout.css" />
+    <link rel="stylesheet" type="text/css" href="theme/design.css" />
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="row clearfix">
+        <div class="column two-thirds">
+          <h1>Flexible, structured events &mdash; log file convenience.</h1>
+        </div>
+        <div class="column third">
+          <div id="banner-logo"></div>
+        </div>
       </div>
     </div>
-  </body>
+  </header>
+  <section>
+    <div class="container">
+      <div class="row clearfix">
+        <div class="column full">
+          <h2>Why Serilog?</h2>
+          <p>Like many other libraries for .NET, Serilog provides diagnostic
+             logging to files, the console, and
+             <a href="https://github.com/serilog/serilog/wiki/Provided-Sinks">
+               elsewhere</a>. It is easy to set up,
+             has a clean API, and is portable between recent .NET platforms.</p>
+
+          <p><em>Unlike</em> other logging libraries, Serilog is built with
+             <strong>structured log data</strong> in mind. Parameters passed
+             along with log messages are not destructively rendered into a text
+             format.
+             Instead, they're preserved as structured data that can be written
+             in document form to a NoSQL data store.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="container">
+      <div class="row clearfix">
+        <div class="column full">
+          <h3>Text formatting with a twist</h3>
+          <p>Serilog <em>message templates</em> are a simple DSL extending
+             .NET format strings. Named properties make searching and filtering
+             log events easier than ever!</p>
+
+          <div class="pre"><span class="keyword">var</span> position = <span class="keyword">new</span> { Latitude = <span class="number">25</span>, Longitude = <span class="number">134</span> };
+<span class="keyword">var</span> elapsedMs = <span class="number">34</span>;
+
+log.Information(<span class="string">"Processed <span class="token">{@Position}</span> in <span class="token">{Elapsed:000}</span> ms."</span>, position, elapsedMs);</div>
+
+          <p>This example records two properties, <code>Position</code> and
+             <code>Elapsed</code> along with the log event. The properties
+             captured in the example, in JSON format, would appear like:</p>
+
+          <div class="pre">{"Position": {"Latitude": 25, "Longitude": 134}, "Elapsed": 34}</div>
+
+          <p>The <code>@</code> operator in front of <code>Position</code>
+             tells Serilog to serialize the object passed in,
+             rather than convert it using <code>ToString()</code>.</p>
+
+          <p>The <code>:000</code> segment following <code>Elapsed</code> is a
+             standard .NET format string
+             that affects how the property is rendered. The console
+             sink included with Serilog will render the above message as:</p>
+
+          <div class="pre">09:14:22 [Information] Processed { Latitude: 25, Longitude: 134 } in 034 ms.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="container">
+      <div class="row clearfix">
+        <div class="column half">
+          <h3>Documentation</h3>
+          <p>You'll find heaps of information and advice about using Serilog on
+             the project site:</p>
+          <ul>
+            <li><a class="highlight" href="https://github.com/serilog/serilog/wiki/Getting-Started">Installation</a></li>
+            <li><a href="https://github.com/serilog/serilog/wiki/Configuration-Basics">Configuration basics</a></li>
+            <li><a href="https://github.com/serilog/serilog/wiki/Writing-Log-Events">Writing log events</a></li>
+            <li><a href="https://github.com/serilog/serilog/wiki/Structured-Data">Structured data</a></li>
+            <li><a href="https://github.com/serilog/serilog/wiki/Provided-Sinks">Provided sinks</a></li>
+            <li><a href="https://github.com/serilog/serilog/wiki/Debugging-and-Diagnostics">Debugging and diagnostics</a></li>
+          </ul>
+          <h3>Resources</h3>
+          <ul>
+            <li><a href="https://github.com/serilog/serilog">GitHub project</a></li>
+            <li><a href="https://groups.google.com/group/serilog">Discussion forum</a></li>
+            <li><a href="http://nblumhardt.com">Blog posts at nblumhardt.com</a></li>
+            <li><a href="https://nuget.org/packages?q=Tags%3A%22serilog%22">Packages on NuGet</a></li>
+            <li><a href="https://jabbr.net/#/rooms/serilog">Jabbr!</a></li>
+          </ul>
+        </div>
+        <div class="column half">
+          <a class="twitter-timeline" data-dnt="true" href="https://twitter.com/search?q=%23Serilog" data-widget-id="431980247123111936">Tweets about "#Serilog"</a>
+          <script>!function (d, s, id) { var js, fjs = d.getElementsByTagName(s)[0], p = /^http:/.test(d.location) ? 'http' : 'https'; if (!d.getElementById(id)) { js = d.createElement(s); js.id = id; js.src = p + "://platform.twitter.com/widgets.js"; fjs.parentNode.insertBefore(js, fjs); } }(document, "script", "twitter-wjs");</script>
+        </div>
+      </div>
+    </div>
+  </section>
+  <footer>
+    <div class="container">
+      <div class="row clearfix">
+        <div class="column full">
+          <p>Serilog is open source software under the
+          <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache 2.0</a>
+          license, copyright &copy; and maintained by its
+          <a href="https://github.com/serilog/serilog/contributors">contributors</a>.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <script src="js/rem.js" type="text/javascript"></script>
+</body>
 </html>
