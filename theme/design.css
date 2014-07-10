@@ -23,9 +23,11 @@ a, a:active, a:focus, a:hover {
 }
 
 #banner-logo {
-	width: 256px;
+	width: 267px;
 	height: 256px;
-	background-image: url('../img/serilog.png')
+	background-image: url('../img/serilog.png');
+	background-size: 267px 256px;
+	background-repeat: no-repeat;
 }
 
 .pre, code {
