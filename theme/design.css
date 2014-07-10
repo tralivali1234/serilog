@@ -11,6 +11,18 @@ h3 {
 	font-family: 'Reenie Beanie', cursive;
 }
 
+h3 {
+		font-size: 120%;
+}
+
+@media (min-width: 40rem) {
+		h3 { font-size: 140%; }
+}
+
+@media (min-width: 64rem) {
+		h3 { font-size: 160%; }
+}
+
 body, p, a {
 	font-family: 'Noto Serif', serif;
 	color: black;
