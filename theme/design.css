@@ -3,7 +3,7 @@ header {
 	color: white;
 }
 
-h1, h2 {
+h1, h2, .ribbon p, .ribbon a {
 	font-family: 'Fira Sans', sans-serif;
 }
 
@@ -28,10 +28,15 @@ body, p, a {
 	color: black;
 }
 
-a, a:active, a:focus, a:hover {
+a, a:active, a:focus {
 	color: black;
 	text-decoration: none;
 	font-weight: bold;
+}
+
+a:hover {
+	font-weight: bold;
+  color: #ff2518;
 }
 
 #banner-logo {
@@ -81,4 +86,28 @@ footer {
 	border-radius: 3px;
 	padding-left: 0.1rem;
 	padding-right: 0.1rem;
+}
+
+.ribbon {
+	background: #EEE;
+	text-align: center;
+}
+
+.ribbon p {
+	font-size: 120%;
+}
+
+.ribbon p, .ribbon a {
+	color: #999;
+}
+
+.pluralsight {
+  display: inline-block;
+  height: 1.8em;
+  margin-bottom: -0.85em;
+  margin-left: 0.2em
+}
+
+footer {
+	text-align: center;
 }

@@ -19,3 +19,12 @@ h2 {
 section, footer {
 	padding: 1rem 5rem;
 }
+
+.twitter-timeline {
+	margin-top: 1rem;
+}
+
+.ribbon {
+	margin-top: 3rem;
+	margin-bottom: 3rem;
+}
