@@ -17,14 +17,6 @@ html {
     font-size: 100%;
 }
 
-@media (min-width: 40rem) {
-    html { font-size: 112%; }
-}
-
-@media (min-width: 68rem) {
-    html { font-size: 120%; }
-}
-
 .container {
     margin: 0 auto;
     max-width: 53rem;
@@ -42,7 +34,16 @@ html {
 
 .column.full { width: 100%; }
 .column.two-thirds { width: 66.7%; }
-.column.half { width: 50%; }
+.column.half { width: 100%; }
 .column.third { width: 33.3%; }
 .column.fourth { width: 25%; }
 .column.flow-opposite { float: right; }
+
+@media (min-width: 40rem) {
+  .column.half { width: 50%; }
+  html { font-size: 112%; }
+}
+
+@media (min-width: 68rem) {
+  html { font-size: 120%; }
+}
