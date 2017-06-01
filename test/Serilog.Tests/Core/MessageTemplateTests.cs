@@ -126,7 +126,7 @@ namespace Serilog.Tests.Core
         static string Render(IFormatProvider formatProvider, string messageTemplate, params object[] properties)
         {
             var mt = new MessageTemplateParser().Parse(messageTemplate);
-            var binder = new PropertyBinder(new PropertyValueConverter(10, Enumerable.Empty<Type>(), Enumerable.Empty<IDestructuringPolicy>()));
+            var binder = new PropertyBinder(new PropertyValueConverter(10, 1000, 1000, Enumerable.Empty<Type>(), Enumerable.Empty<IDestructuringPolicy>(), false));
             var props = binder.ConstructProperties(mt, properties);
             var output = new StringBuilder();
             var writer = new StringWriter(output);
@@ -162,6 +162,41 @@ namespace Serilog.Tests.Core
         {
             var m = Render("{1}, {0}", "world");
             Assert.Equal("{1}, \"world\"", m);
+        }
+
+        [Fact]
+        public void AnonymousTypeShouldBeRendered()
+        {
+            var anonymous = new { Test = 3M };
+            var m = Render("Anonymous type {value}", anonymous);
+            Assert.Equal("Anonymous type \"{ Test = 3 }\"", m);
+        }
+
+        [Fact]
+        public void EnumerableOfAnonymousTypeShouldBeRendered()
+        {
+            var anonymous = new { Foo = 4M, Bar = "Baz" };
+            var enumerable = Enumerable.Repeat("MyKey", 1).Select(v => anonymous);
+            var m = Render("Enumerable with anonymous type {enumerable}", enumerable);
+            Assert.Equal("Enumerable with anonymous type [\"{ Foo = 4, Bar = Baz }\"]", m);
+        }
+
+        [Fact]
+        public void DictionaryOfAnonymousTypeAsValueShouldBeRendered()
+        {
+            var anonymous = new { Test = 5M };
+            var dictionary = Enumerable.Repeat("MyKey", 1).ToDictionary(v => v, v => anonymous);
+            var m = Render("Dictionary with anonymous type value {dictionary}", dictionary);
+            Assert.Equal("Dictionary with anonymous type value [(\"MyKey\": \"{ Test = 5 }\")]", m);
+        }
+
+        [Fact]
+        public void DictionaryOfAnonymousTypeAsKeyShouldBeRendered()
+        {
+            var anonymous = new { Bar = 6M, Baz = 4M };
+            var dictionary = Enumerable.Repeat("MyValue", 1).ToDictionary(v => anonymous, v => v);
+            var m = Render("Dictionary with anonymous type key {dictionary}", dictionary);
+            Assert.Equal("Dictionary with anonymous type key [\"[{ Bar = 6, Baz = 4 }, MyValue]\"]", m);
         }
     }
 }

@@ -1,30 +1,37 @@
 ﻿// Copyright 2013-2015 Serilog Contributors
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if !PROFILE259 && !DOTNET5_4
+
 using System;
-using System.Runtime.Remoting.Messaging;
+using System.ComponentModel;
 using Serilog.Core;
 using Serilog.Core.Enrichers;
 using Serilog.Events;
+
+#if ASYNCLOCAL
+using System.Collections.Generic;
+using System.Threading;
+#elif REMOTING
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Messaging;
+#endif
 
 namespace Serilog.Context
 {
     /// <summary>
     /// Holds ambient properties that can be attached to log events. To
-    /// configure, use the <see cref="LoggerConfigurationFullNetFxExtensions.FromLogContext"/>
-    /// extension method.
+    /// configure, use the <see cref="Serilog.Configuration.LoggerEnrichmentConfiguration.FromLogContext"/> method.
     /// </summary>
     /// <example>
     /// Configuration:
@@ -41,24 +48,22 @@ namespace Serilog.Context
     /// }
     /// </code>
     /// </example>
-    /// <remarks>The scope of the context is the current logical thread, using
-    /// <see cref="CallContext.LogicalGetData"/> (and so is
-    /// preserved across async/await calls).</remarks>
+    /// <remarks>The scope of the context is the current logical thread, using AsyncLocal
+    /// (and so is preserved across async/await calls).</remarks>
     public static class LogContext
     {
-        static readonly string DataSlotName = typeof(LogContext).FullName;
-        
-        /// <summary>
-        /// When calling into appdomains without Serilog loaded, e.g. via remoting or during unit testing,
-        /// it may be necesary to set this value to true so that serialization exceptions are avoided. When possible,
-        /// using the <see cref="Suspend"/> method in a using block around the call has a lower overhead and
-        /// should be preferred.
-        /// </summary>
-        public static bool PermitCrossAppDomainCalls { get; set; }
+#if ASYNCLOCAL
+        static readonly AsyncLocal<ImmutableStack<ILogEventEnricher>> Data = new AsyncLocal<ImmutableStack<ILogEventEnricher>>();
+#elif REMOTING
+        static readonly string DataSlotName = typeof(LogContext).FullName + "@" + Guid.NewGuid();
+#else // DOTNET_51
+        [ThreadStatic]
+        static ImmutableStack<ILogEventEnricher> Data;
+#endif
 
         /// <summary>
         /// Push a property onto the context, returning an <see cref="IDisposable"/>
-        /// that can later be used to remove the property, along with any others that
+        /// that must later be used to remove the property, along with any others that
         /// may have been pushed on top of it and not yet popped. The property must
         /// be popped from the same thread/logical call context.
         /// </summary>
@@ -71,31 +76,49 @@ namespace Serilog.Context
         /// <returns>A token that must be disposed, in order, to pop properties back off the stack.</returns>
         public static IDisposable PushProperty(string name, object value, bool destructureObjects = false)
         {
+            return Push(new PropertyEnricher(name, value, destructureObjects));
+        }
+
+        /// <summary>
+        /// Push an enricher onto the context, returning an <see cref="IDisposable"/>
+        /// that must later be used to remove the property, along with any others that
+        /// may have been pushed on top of it and not yet popped. The property must
+        /// be popped from the same thread/logical call context.
+        /// </summary>
+        /// <param name="enricher">An enricher to push onto the log context</param>
+        /// <returns>A token that must be disposed, in order, to pop properties back off the stack.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static IDisposable Push(ILogEventEnricher enricher)
+        {
+            if (enricher == null) throw new ArgumentNullException(nameof(enricher));
+
             var stack = GetOrCreateEnricherStack();
             var bookmark = new ContextStackBookmark(stack);
 
-            Enrichers = stack.Push(new PropertyEnricher(name, value, destructureObjects));
+            Enrichers = stack.Push(enricher);
 
             return bookmark;
         }
 
         /// <summary>
-        /// Push multiple properties onto the context, returning an <see cref="IDisposable"/>
-        /// that can later be used to remove the properties. The properties must
+        /// Push multiple enrichers onto the context, returning an <see cref="IDisposable"/>
+        /// that must later be used to remove the property, along with any others that
+        /// may have been pushed on top of it and not yet popped. The property must
         /// be popped from the same thread/logical call context.
         /// </summary>
-        /// <param name="properties">Log Properties to push onto the log context</param>
+        /// <seealso cref="PropertyEnricher"/>.
+        /// <param name="enrichers">Enrichers to push onto the log context</param>
         /// <returns>A token that must be disposed, in order, to pop properties back off the stack.</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public static IDisposable PushProperties(params ILogEventEnricher[] properties)
+        public static IDisposable Push(params ILogEventEnricher[] enrichers)
         {
-            if (properties == null) throw new ArgumentNullException(nameof(properties));
+            if (enrichers == null) throw new ArgumentNullException(nameof(enrichers));
 
             var stack = GetOrCreateEnricherStack();
             var bookmark = new ContextStackBookmark(stack);
 
-            foreach (var prop in properties)
-                stack = stack.Push(prop);
+            for (var i = 0; i < enrichers.Length; ++i)
+                stack = stack.Push(enrichers[i]);
 
             Enrichers = stack;
 
@@ -103,22 +126,28 @@ namespace Serilog.Context
         }
 
         /// <summary>
-        /// Remove all data from the context so that
-        /// cross-<see cref="AppDomain"/> calls can be made without requiring
-        /// Serilog assemblies to be present in the remote domain.
+        /// Push enrichers onto the log context. This method is obsolete, please
+        /// use <see cref="Push(Serilog.Core.ILogEventEnricher[])"/> instead.
         /// </summary>
-        /// <returns>A token that will restore the suspended log context data, if any.</returns>
-        /// <remarks>The <see cref="LogContext"/> should not be manipulated further
-        /// until the return value from this method has been disposed.</remarks>
-        /// <returns></returns>
-        public static IDisposable Suspend()
+        /// <param name="properties">Enrichers to push onto the log context</param>
+        /// <returns>A token that must be disposed, in order, to pop properties back off the stack.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        [Obsolete("Please use `LogContext.Push(properties)` instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static IDisposable PushProperties(params ILogEventEnricher[] properties)
+        {
+            return Push(properties);
+        }
+
+        /// <summary>
+        /// Obtain an enricher that represents the current contents of the <see cref="LogContext"/>. This
+        /// can be pushed back onto the context in a different location/thread when required.
+        /// </summary>
+        /// <returns>An enricher that represents the current contents of the <see cref="LogContext"/>.</returns>
+        public static ILogEventEnricher Clone()
         {
             var stack = GetOrCreateEnricherStack();
-            var bookmark = new ContextStackBookmark(stack);
-
-            Enrichers = null;
-
-            return bookmark;
+            return new SafeAggregateEnricher(stack);
         }
 
         static ImmutableStack<ILogEventEnricher> GetOrCreateEnricherStack()
@@ -130,34 +159,6 @@ namespace Serilog.Context
                 Enrichers = enrichers;
             }
             return enrichers;
-        }
-
-        static ImmutableStack<ILogEventEnricher> Enrichers
-        {
-            get
-            {
-                
-                var data = CallContext.LogicalGetData(DataSlotName);
-
-                ImmutableStack<ILogEventEnricher> context;
-                if (PermitCrossAppDomainCalls)
-                {
-                    context = data != null ? ((Wrapper)data).Value : null;
-                }
-                else
-                {
-                    context = (ImmutableStack<ILogEventEnricher>)data;
-                }
-
-                return context;
-            }
-            set
-            {
-                
-                var context = !PermitCrossAppDomainCalls ? (object)value : new Wrapper { Value = value };
-
-                CallContext.LogicalSetData(DataSlotName, context);
-            }
         }
 
         internal static void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
@@ -187,11 +188,37 @@ namespace Serilog.Context
             }
         }
 
-        sealed class Wrapper : MarshalByRefObject
+#if ASYNCLOCAL
+
+        static ImmutableStack<ILogEventEnricher> Enrichers
         {
-            public ImmutableStack<ILogEventEnricher> Value { get; set; }
+            get => Data.Value;
+            set => Data.Value = value;
         }
+
+#elif REMOTING
+
+        static ImmutableStack<ILogEventEnricher> Enrichers
+        {
+            get
+            {
+                var objectHandle = CallContext.LogicalGetData(DataSlotName) as ObjectHandle;
+
+                return objectHandle?.Unwrap() as ImmutableStack<ILogEventEnricher>;
+            }
+            set
+            {
+                CallContext.LogicalSetData(DataSlotName, new ObjectHandle(value));
+            }
+        }
+
+#else // DOTNET_51
+
+        static ImmutableStack<ILogEventEnricher> Enrichers
+        {
+            get => Data;
+            set => Data = value;
+        }
+#endif
     }
 }
-
-#endif

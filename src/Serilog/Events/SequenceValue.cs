@@ -1,11 +1,11 @@
 ﻿// Copyright 2013-2015 Serilog Contributors
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,12 +16,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
-#if NET40
-using IPropertyValueList = System.Collections.Generic.IList<Serilog.Events.LogEventPropertyValue>;
-#else
-using IPropertyValueList = System.Collections.Generic.IReadOnlyList<Serilog.Events.LogEventPropertyValue>;
-#endif
 
 namespace Serilog.Events
 {
@@ -46,7 +40,7 @@ namespace Serilog.Events
         /// <summary>
         /// The elements of the sequence.
         /// </summary>
-        public IPropertyValueList Elements { get { return _elements; } }
+        public IReadOnlyList<LogEventPropertyValue> Elements => _elements;
 
         /// <summary>
         /// Render the value to the output.

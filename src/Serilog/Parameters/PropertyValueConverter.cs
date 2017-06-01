@@ -1,11 +1,11 @@
 ﻿// Copyright 2013-2015 Serilog Contributors
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,10 +22,7 @@ using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Parsing;
 using Serilog.Policies;
-
-#if NET40
-using Serilog.Platform;
-#endif
+using System.Runtime.CompilerServices;
 
 namespace Serilog.Parameters
 {
@@ -40,23 +37,37 @@ namespace Serilog.Parameters
             typeof(bool),
             typeof(char),
             typeof(byte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
-                typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal),
+            typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal),
             typeof(string),
             typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan),
             typeof(Guid), typeof(Uri)
         };
 
-        readonly IDestructuringPolicy[] _destructuringPolicies; 
+        readonly IDestructuringPolicy[] _destructuringPolicies;
         readonly IScalarConversionPolicy[] _scalarConversionPolicies;
         readonly int _maximumDestructuringDepth;
+        readonly int _maximumStringLength;
+        readonly int _maximumCollectionCount;
+        readonly bool _propagateExceptions;
 
-        public PropertyValueConverter(int maximumDestructuringDepth, IEnumerable<Type> additionalScalarTypes, IEnumerable<IDestructuringPolicy> additionalDestructuringPolicies)
+        public PropertyValueConverter(
+            int maximumDestructuringDepth, 
+            int maximumStringLength,
+            int maximumCollectionCount,
+            IEnumerable<Type> additionalScalarTypes,
+            IEnumerable<IDestructuringPolicy> additionalDestructuringPolicies,
+            bool propagateExceptions)
         {
             if (additionalScalarTypes == null) throw new ArgumentNullException(nameof(additionalScalarTypes));
             if (additionalDestructuringPolicies == null) throw new ArgumentNullException(nameof(additionalDestructuringPolicies));
             if (maximumDestructuringDepth < 0) throw new ArgumentOutOfRangeException(nameof(maximumDestructuringDepth));
+            if (maximumStringLength < 2) throw new ArgumentOutOfRangeException(nameof(maximumStringLength));
+            if (maximumCollectionCount < 1) throw new ArgumentOutOfRangeException(nameof(maximumCollectionCount));
 
             _maximumDestructuringDepth = maximumDestructuringDepth;
+            _propagateExceptions = propagateExceptions;
+            _maximumStringLength = maximumStringLength;
+            _maximumCollectionCount = maximumCollectionCount;
 
             _scalarConversionPolicies = new IScalarConversionPolicy[]
             {
@@ -64,13 +75,13 @@ namespace Serilog.Parameters
                 new NullableScalarConversionPolicy(),
                 new EnumScalarConversionPolicy(),
                 new ByteArrayScalarConversionPolicy(),
-                new ReflectionTypesScalarConversionPolicy()
             };
 
             _destructuringPolicies = additionalDestructuringPolicies
-                .Concat(new []
+                .Concat(new IDestructuringPolicy []
                 {
-                    new DelegateDestructuringPolicy() 
+                    new DelegateDestructuringPolicy(),
+                    new ReflectionTypesScalarDestructuringPolicy()
                 })
                 .ToArray();
         }
@@ -87,7 +98,19 @@ namespace Serilog.Parameters
 
         public LogEventPropertyValue CreatePropertyValue(object value, Destructuring destructuring)
         {
-            return CreatePropertyValue(value, destructuring, 1);
+            try
+            {
+                return CreatePropertyValue(value, destructuring, 1);
+            }
+            catch (Exception ex)
+            {
+                SelfLog.WriteLine("Exception caught while converting property value: {0}", ex);
+
+                if (_propagateExceptions)
+                    throw;
+
+                return new ScalarValue("Capturing the property value threw an exception: " + ex.GetType().Name);
+            }
         }
 
         LogEventPropertyValue CreatePropertyValue(object value, bool destructureObjects, int depth)
@@ -106,13 +129,24 @@ namespace Serilog.Parameters
                 return new ScalarValue(null);
 
             if (destructuring == Destructuring.Stringify)
-                return new ScalarValue(value.ToString());
+            {
+                return Stringify(value);
+            }
 
             var valueType = value.GetType();
             var limiter = new DepthLimiter(depth, _maximumDestructuringDepth, this);
-            
-            foreach (var scalarConversionPolicy in _scalarConversionPolicies)
+
+            if (destructuring == Destructuring.Destructure)
             {
+                var stringValue = value as string;
+                if (stringValue != null)
+                {
+                    value = TruncateIfNecessary(stringValue);
+                }
+            }
+
+            foreach (var scalarConversionPolicy in _scalarConversionPolicies)
+            {            
                 ScalarValue converted;
                 if (scalarConversionPolicy.TryConvertToScalar(value, limiter, out converted))
                     return converted;
@@ -141,22 +175,29 @@ namespace Serilog.Parameters
                 // multiple different interpretations.
                 if (IsValueTypeDictionary(valueType))
                 {
-                    return new DictionaryValue(enumerable.Cast<dynamic>()
+                    var typeInfo = typeof(KeyValuePair<,>).MakeGenericType(valueType.GenericTypeArguments).GetTypeInfo();
+                    var keyProperty = typeInfo.GetDeclaredProperty("Key");
+                    var valueProperty = typeInfo.GetDeclaredProperty("Value");
+
+                    return new DictionaryValue(enumerable.Cast<object>().Take(_maximumCollectionCount)
                         .Select(kvp => new KeyValuePair<ScalarValue, LogEventPropertyValue>(
-                                           (ScalarValue)limiter.CreatePropertyValue(kvp.Key, destructuring),
-                                           limiter.CreatePropertyValue(kvp.Value, destructuring)))
+                                           (ScalarValue)limiter.CreatePropertyValue(keyProperty.GetValue(kvp), destructuring),
+                                           limiter.CreatePropertyValue(valueProperty.GetValue(kvp), destructuring)))
                         .Where(kvp => kvp.Key.Value != null));
                 }
 
                 return new SequenceValue(
-                    enumerable.Cast<object>().Select(o => limiter.CreatePropertyValue(o, destructuring)));
+                    enumerable.Cast<object>().Take(_maximumCollectionCount).Select(o => limiter.CreatePropertyValue(o, destructuring)));
             }
-            
+
             if (destructuring == Destructuring.Destructure)
             {
-                var typeTag = value.GetType().Name;
-                if (typeTag.Length <= 0 || !char.IsLetter(typeTag[0]))
+                var type = value.GetType();
+                var typeTag = type.Name;
+                if (typeTag.Length <= 0 || IsCompilerGeneratedType(type))
+                {
                     typeTag = null;
+                }
 
                 return new StructureValue(GetProperties(value, limiter), typeTag);
             }
@@ -164,22 +205,28 @@ namespace Serilog.Parameters
             return new ScalarValue(value.ToString());
         }
 
+        LogEventPropertyValue Stringify(object value)
+        {
+            var stringified = value.ToString();
+            var truncated = TruncateIfNecessary(stringified);
+            return new ScalarValue(truncated);
+        }
+
+        string TruncateIfNecessary(string text)
+        {
+            if (text.Length > _maximumStringLength)
+            {
+                return text.Substring(0, _maximumStringLength - 1) + "…";
+            }
+
+            return text;
+        }
+
         bool IsValueTypeDictionary(Type valueType)
         {
-            return
-#if NET40
-                   valueType.IsGenericType &&
-#else
-                   valueType.IsConstructedGenericType &&
-#endif
+            return valueType.IsConstructedGenericType &&
                    valueType.GetGenericTypeDefinition() == typeof (Dictionary<,>) &&
-                   IsValidDictionaryKeyType(
-#if NET40
-                       valueType.GetGenericArguments()
-#else
-                       valueType.GenericTypeArguments
-#endif
-                       [0]);
+                   IsValidDictionaryKeyType(valueType.GenericTypeArguments[0]);
         }
 
         bool IsValidDictionaryKeyType(Type valueType)
@@ -188,31 +235,46 @@ namespace Serilog.Parameters
                    valueType.GetTypeInfo().IsEnum;
         }
 
-        static IEnumerable<LogEventProperty> GetProperties(object value, ILogEventPropertyValueFactory recursive)
+        IEnumerable<LogEventProperty> GetProperties(object value, ILogEventPropertyValueFactory recursive)
         {
             foreach (var prop in value.GetType().GetPropertiesRecursive())
             {
                 object propValue;
                 try
                 {
-#if NET40
-                    propValue = prop.GetValue(value, null);
-#else
                     propValue = prop.GetValue(value);
-#endif
                 }
                 catch (TargetParameterCountException)
                 {
+                    // These properties would ideally be ignored; since they never produce values they're not
+                    // of concern to auditing and exceptions can be suppressed.
                     SelfLog.WriteLine("The property accessor {0} is a non-default indexer", prop);
                     continue;
                 }
                 catch (TargetInvocationException ex)
                 {
-                    SelfLog.WriteLine("The property accessor {0} threw exception {1}", prop, ex);
+                    SelfLog.WriteLine("The property accessor {0} threw exception: {1}", prop, ex);
+
+                    if (_propagateExceptions)
+                        throw;
+
                     propValue = "The property accessor threw an exception: " + ex.InnerException.GetType().Name;
                 }
                 yield return new LogEventProperty(prop.Name, recursive.CreatePropertyValue(propValue, true));
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsCompilerGeneratedType(Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            var typeName = type.Name;
+
+            //C# Anonymous types always start with "<>" and VB's start with "VB$"
+            return typeInfo.IsGenericType && typeInfo.IsSealed && typeInfo.IsNotPublic && type.Namespace == null
+                && (typeName[0] == '<'
+                    || (typeName.Length > 2 && typeName[0] == 'V' && typeName[1] == 'B' && typeName[2] == '$'));
+        }
     }
 }
+

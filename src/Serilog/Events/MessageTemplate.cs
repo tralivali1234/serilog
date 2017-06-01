@@ -1,11 +1,11 @@
 // Copyright 2013-2015 Serilog Contributors
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,12 +19,6 @@ using System.Linq;
 using Serilog.Debugging;
 using Serilog.Parsing;
 
-#if NET40
-using IPropertyDictionary = System.Collections.Generic.IDictionary<string, Serilog.Events.LogEventPropertyValue>;
-#else
-using IPropertyDictionary = System.Collections.Generic.IReadOnlyDictionary<string, Serilog.Events.LogEventPropertyValue>;
-#endif
-
 namespace Serilog.Events
 {
     /// <summary>
@@ -34,13 +28,15 @@ namespace Serilog.Events
     /// </summary>
     public class MessageTemplate
     {
-        readonly string _text;
+        /// <summary>
+        /// Represents the empty message template.
+        /// </summary>
+        public static MessageTemplate Empty { get; } = new MessageTemplate(Enumerable.Empty<MessageTemplateToken>());
+
         readonly MessageTemplateToken[] _tokens;
 
         // Optimisation for when the template is bound to
         // property values.
-        readonly PropertyToken[] _positionalProperties;
-        readonly PropertyToken[] _namedProperties;
 
         /// <summary>
         /// Construct a message template using manually-defined text and property tokens.
@@ -62,10 +58,10 @@ namespace Serilog.Events
             if (text == null) throw new ArgumentNullException(nameof(text));
             if (tokens == null) throw new ArgumentNullException(nameof(tokens));
 
-            _text = text;
+            Text = text;
             _tokens = tokens.ToArray();
 
-            var propertyTokens = _tokens.OfType<PropertyToken>().ToArray();
+            var propertyTokens = GetElementsOfTypeToArray<PropertyToken>(_tokens);
             if (propertyTokens.Length != 0)
             {
                 var allPositional = true;
@@ -80,25 +76,40 @@ namespace Serilog.Events
 
                 if (allPositional)
                 {
-                    _positionalProperties = propertyTokens;
+                    PositionalProperties = propertyTokens;
                 }
                 else
                 {
                     if (anyPositional)
                         SelfLog.WriteLine("Message template is malformed: {0}", text);
 
-                    _namedProperties = propertyTokens;
+                    NamedProperties = propertyTokens;
                 }
             }
         }
 
         /// <summary>
+        /// Similar to <see cref="Enumerable.OfType{TResult}"/>, but faster.
+        /// </summary>
+        static TResult[] GetElementsOfTypeToArray<TResult>(object[] tokens)
+            where TResult: class
+        {
+            var result = new List<TResult>(tokens.Length / 2);
+            for (var i = 0; i < tokens.Length; i++)
+            {
+                var token = tokens[i] as TResult;
+                if (token != null)
+                {
+                    result.Add(token);
+                }
+            }
+            return result.ToArray();
+        }
+
+        /// <summary>
         /// The raw text describing the template.
         /// </summary>
-        public string Text
-        {
-            get { return _text; }
-        }
+        public string Text { get; }
 
         /// <summary>
         /// Render the template as a string.
@@ -112,20 +123,11 @@ namespace Serilog.Events
         /// <summary>
         /// The tokens parsed from the template.
         /// </summary>
-        public IEnumerable<MessageTemplateToken> Tokens
-        {
-            get { return _tokens; }
-        }
+        public IEnumerable<MessageTemplateToken> Tokens => _tokens;
 
-        internal PropertyToken[] NamedProperties
-        {
-            get { return _namedProperties; }
-        }
+        internal PropertyToken[] NamedProperties { get; }
 
-        internal PropertyToken[] PositionalProperties
-        {
-            get { return _positionalProperties; }
-        }
+        internal PropertyToken[] PositionalProperties { get; }
 
         /// <summary>
         /// Convert the message template into a textual message, given the
@@ -136,7 +138,7 @@ namespace Serilog.Events
         /// <returns>The message created from the template and properties. If the
         /// properties are mismatched with the template, the template will be
         /// returned with incomplete substitution.</returns>
-        public string Render(IPropertyDictionary properties, IFormatProvider formatProvider = null)
+        public string Render(IReadOnlyDictionary<string, LogEventPropertyValue> properties, IFormatProvider formatProvider = null)
         {
             var writer = new StringWriter(formatProvider);
             Render(properties, writer, formatProvider);
@@ -152,7 +154,7 @@ namespace Serilog.Events
         /// properties are mismatched with the template, the template will be
         /// returned with incomplete substitution.</param>
         /// <param name="formatProvider">Supplies culture-specific formatting information, or null.</param>
-        public void Render(IPropertyDictionary properties, TextWriter output, IFormatProvider formatProvider = null)
+        public void Render(IReadOnlyDictionary<string, LogEventPropertyValue> properties, TextWriter output, IFormatProvider formatProvider = null)
         {
             foreach (var token in _tokens)
             {

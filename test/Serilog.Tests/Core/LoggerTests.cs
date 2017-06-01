@@ -1,11 +1,13 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Tests.Support;
+
+#pragma warning disable Serilog004 // Constant MessageTemplate verifier
+#pragma warning disable Serilog003 // Property binding verifier
 
 namespace Serilog.Tests.Core
 {
@@ -17,10 +19,12 @@ namespace Serilog.Tests.Core
             var thrown = false;
 
             var l = new LoggerConfiguration()
-                .WriteTo.TextWriter(new StringWriter())
-                .Enrich.With(new DelegatingEnricher((le, pf) => {
+                .WriteTo.Sink(new StringSink())
+                .Enrich.With(new DelegatingEnricher((le, pf) =>
+                {
                     thrown = true;
-                    throw new Exception("No go, pal."); }))
+                    throw new Exception("No go, pal.");
+                }))
                 .CreateLogger();
 
             l.Information(Some.String());
@@ -32,7 +36,7 @@ namespace Serilog.Tests.Core
         public void AContextualLoggerAddsTheSourceTypeName()
         {
             var evt = DelegatingSink.GetLogEvent(l => l.ForContext<LoggerTests>()
-                                        .Information(Some.String()));
+                .Information(Some.String()));
 
             var lv = evt.Properties[Constants.SourceContextPropertyName].LiteralValue();
             Assert.Equal(typeof(LoggerTests).FullName, lv);
@@ -45,8 +49,8 @@ namespace Serilog.Tests.Core
             var v1 = Some.Int();
             var v2 = Some.Int();
             var evt = DelegatingSink.GetLogEvent(l => l.ForContext(name, v1)
-                                        .ForContext(name, v2)
-                                        .Write(Some.InformationEvent()));
+                .ForContext(name, v2)
+                .Write(Some.InformationEvent()));
 
             var pActual = evt.Properties[name];
             Assert.Equal(v2, pActual.LiteralValue());
@@ -87,5 +91,32 @@ namespace Serilog.Tests.Core
             Assert.Equal(4, events.Count);
             Assert.True(events.All(evt => evt.RenderMessage() == "Emitted"));
         }
-    }
+
+        [Fact]
+        public void MessageTemplatesCanBeBound()
+        {
+            var log = new LoggerConfiguration()
+                .CreateLogger();
+
+            MessageTemplate template;
+            IEnumerable<LogEventProperty> properties;
+            Assert.True(log.BindMessageTemplate("Hello, {Name}!", new object[] { "World" }, out template, out properties));
+
+            Assert.Equal("Hello, {Name}!", template.Text);
+            Assert.Equal("World", properties.Single().Value.LiteralValue());
+        }
+
+        [Fact]
+        public void PropertiesCanBeBound()
+        {
+            var log = new LoggerConfiguration()
+                .CreateLogger();
+
+            LogEventProperty property;
+            Assert.True(log.BindProperty("Name", "World", false, out property));
+
+            Assert.Equal("Name", property.Name);
+            Assert.Equal("World", property.Value.LiteralValue());
+        }
+	}
 }

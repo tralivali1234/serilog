@@ -1,11 +1,11 @@
 ﻿// Copyright 2013-2015 Serilog Contributors
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,18 +19,8 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Serilog.Events;
 using Serilog.Parsing;
-
-#if NET40
-using IPropertyDictionary = System.Collections.Generic.IDictionary<string, Serilog.Events.LogEventPropertyValue>;
-using IScalarDictionary = System.Collections.Generic.IDictionary<Serilog.Events.ScalarValue, Serilog.Events.LogEventPropertyValue>;
-#else
-using IPropertyDictionary = System.Collections.Generic.IReadOnlyDictionary<string, Serilog.Events.LogEventPropertyValue>;
-using IScalarDictionary = System.Collections.Generic.IReadOnlyDictionary<Serilog.Events.ScalarValue, Serilog.Events.LogEventPropertyValue>;
-#endif
-
 
 namespace Serilog.Formatting.Json
 {
@@ -40,6 +30,13 @@ namespace Serilog.Formatting.Json
     /// </summary>
     public class JsonFormatter : ITextFormatter
     {
+        const string ExtensionPointObsoletionMessage = "Extension of JsonFormatter by subclassing is obsolete and will " +
+                                                       "be removed in a future Serilog version. Write a custom formatter " +
+                                                       "based on JsonValueFormatter instead. See https://github.com/serilog/serilog/pull/819.";
+
+        // Ignore obsoletion errors
+        #pragma warning disable 618
+
         readonly bool _omitEnclosingObject;
         readonly string _closingDelimiter;
         readonly bool _renderMessage;
@@ -47,12 +44,18 @@ namespace Serilog.Formatting.Json
         readonly IDictionary<Type, Action<object, bool, TextWriter>> _literalWriters;
 
         /// <summary>
-        /// Construct a <see cref="JsonFormatter"/>. Obsolete, please use named arguments
-        /// when calling this constructor.
+        /// Construct a <see cref="JsonFormatter"/>.
         /// </summary>
-        [Obsolete("Use named arguments with this method to guarantee forwards-compatibility."), EditorBrowsable(EditorBrowsableState.Never)]
-        public JsonFormatter(bool omitEnclosingObjectObsolete)
-            : this(omitEnclosingObject: omitEnclosingObjectObsolete)
+        /// <param name="closingDelimiter">A string that will be written after each log event is formatted.
+        /// If null, <see cref="Environment.NewLine"/> will be used.</param>
+        /// <param name="renderMessage">If true, the message will be rendered and written to the output as a
+        /// property named RenderedMessage.</param>
+        /// <param name="formatProvider">Supplies culture-specific formatting information, or null.</param>
+        public JsonFormatter(
+            string closingDelimiter = null,
+            bool renderMessage = false,
+            IFormatProvider formatProvider = null)
+            :this(false, closingDelimiter, renderMessage, formatProvider)
         {
         }
 
@@ -68,8 +71,9 @@ namespace Serilog.Formatting.Json
         /// <param name="renderMessage">If true, the message will be rendered and written to the output as a
         /// property named RenderedMessage.</param>
         /// <param name="formatProvider">Supplies culture-specific formatting information, or null.</param>
+        [Obsolete("The omitEnclosingObject parameter is obsolete and will be removed in a future Serilog version.")]
         public JsonFormatter(
-            bool omitEnclosingObject = false,
+            bool omitEnclosingObject,
             string closingDelimiter = null,
             bool renderMessage = false,
             IFormatProvider formatProvider = null)
@@ -91,8 +95,8 @@ namespace Serilog.Formatting.Json
                 { typeof(uint), WriteToString },
                 { typeof(long), WriteToString },
                 { typeof(ulong), WriteToString },
-                { typeof(float), WriteToString },
-                { typeof(double), WriteToString },
+                { typeof(float), (v, q, w) => WriteSingle((float)v, w) },
+                { typeof(double), (v, q, w) => WriteDouble((double)v, w) },
                 { typeof(decimal), WriteToString },
                 { typeof(string), (v, q, w) => WriteString((string)v, w) },
                 { typeof(DateTime), (v, q, w) => WriteDateTime((DateTime)v, w) },
@@ -156,10 +160,11 @@ namespace Serilog.Formatting.Json
         /// </summary>
         /// <param name="type">The type of values, which <paramref name="writer" /> handles.</param>
         /// <param name="writer">The function, which writes the values.</param>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected void AddLiteralWriter(Type type, Action<object, TextWriter> writer)
         {
-            if (type == null) throw new ArgumentNullException("type");
-            if (writer == null) throw new ArgumentNullException("writer");
+            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
 
             _literalWriters[type] = (v, _, w) => writer(v, w);
         }
@@ -167,17 +172,19 @@ namespace Serilog.Formatting.Json
         /// <summary>
         /// Writes out individual renderings of attached properties
         /// </summary>
-        protected virtual void WriteRenderings(IGrouping<string, PropertyToken>[] tokensWithFormat, IPropertyDictionary properties, TextWriter output)
+        [Obsolete(ExtensionPointObsoletionMessage)]
+        protected virtual void WriteRenderings(IGrouping<string, PropertyToken>[] tokensWithFormat, IReadOnlyDictionary<string, LogEventPropertyValue> properties, TextWriter output)
         {
             output.Write(",\"{0}\":{{", "Renderings");
             WriteRenderingsValues(tokensWithFormat, properties, output);
             output.Write("}");
         }
-        
+
         /// <summary>
         /// Writes out the values of individual renderings of attached properties
         /// </summary>
-        protected virtual void WriteRenderingsValues(IGrouping<string, PropertyToken>[] tokensWithFormat, IPropertyDictionary properties, TextWriter output)
+        [Obsolete(ExtensionPointObsoletionMessage)]
+        protected virtual void WriteRenderingsValues(IGrouping<string, PropertyToken>[] tokensWithFormat, IReadOnlyDictionary<string, LogEventPropertyValue> properties, TextWriter output)
         {
             var rdelim = "";
             foreach (var ptoken in tokensWithFormat)
@@ -209,11 +216,12 @@ namespace Serilog.Formatting.Json
                 output.Write("]");
             }
         }
-        
+
         /// <summary>
         /// Writes out the attached properties
         /// </summary>
-        protected virtual void WriteProperties(IPropertyDictionary properties, TextWriter output)
+        [Obsolete(ExtensionPointObsoletionMessage)]
+        protected virtual void WriteProperties(IReadOnlyDictionary<string, LogEventPropertyValue> properties, TextWriter output)
         {
             output.Write(",\"{0}\":{{", "Properties");
             WritePropertiesValues(properties, output);
@@ -223,7 +231,8 @@ namespace Serilog.Formatting.Json
         /// <summary>
         /// Writes out the attached properties values
         /// </summary>
-        protected virtual void WritePropertiesValues(IPropertyDictionary properties, TextWriter output)
+        [Obsolete(ExtensionPointObsoletionMessage)]
+        protected virtual void WritePropertiesValues(IReadOnlyDictionary<string, LogEventPropertyValue> properties, TextWriter output)
         {
             var precedingDelimiter = "";
             foreach (var property in properties)
@@ -231,42 +240,47 @@ namespace Serilog.Formatting.Json
                 WriteJsonProperty(property.Key, property.Value, ref precedingDelimiter, output);
             }
         }
-        
+
         /// <summary>
         /// Writes out the attached exception
         /// </summary>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected virtual void WriteException(Exception exception, ref string delim, TextWriter output)
         {
             WriteJsonProperty("Exception", exception, ref delim, output);
         }
-           
+
         /// <summary>
         /// (Optionally) writes out the rendered message
         /// </summary>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected virtual void WriteRenderedMessage(string message, ref string delim, TextWriter output)
         {
             WriteJsonProperty("RenderedMessage", message, ref delim, output);
         }
-        
+
         /// <summary>
         /// Writes out the message template for the logevent.
         /// </summary>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected virtual void WriteMessageTemplate(string template, ref string delim, TextWriter output)
         {
             WriteJsonProperty("MessageTemplate", template, ref delim, output);
         }
-        
+
         /// <summary>
         /// Writes out the log level
         /// </summary>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected virtual void WriteLevel(LogEventLevel level, ref string delim, TextWriter output)
         {
             WriteJsonProperty("Level", level, ref delim, output);
         }
-        
+
         /// <summary>
         /// Writes out the log timestamp
         /// </summary>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected virtual void WriteTimestamp(DateTimeOffset timestamp, ref string delim, TextWriter output)
         {
             WriteJsonProperty("Timestamp", timestamp, ref delim, output);
@@ -275,6 +289,7 @@ namespace Serilog.Formatting.Json
         /// <summary>
         /// Writes out a structure property
         /// </summary>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected virtual void WriteStructure(string typeTag, IEnumerable<LogEventProperty> properties, TextWriter output)
         {
             output.Write("{");
@@ -288,10 +303,11 @@ namespace Serilog.Formatting.Json
 
             output.Write("}");
         }
-        
+
         /// <summary>
         /// Writes out a sequence property
         /// </summary>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected virtual void WriteSequence(IEnumerable elements, TextWriter output)
         {
             output.Write("[");
@@ -304,11 +320,12 @@ namespace Serilog.Formatting.Json
             }
             output.Write("]");
         }
-           
+
         /// <summary>
-        /// Writes out a dictionary 
+        /// Writes out a dictionary
         /// </summary>
-        protected virtual void WriteDictionary(IScalarDictionary elements, TextWriter output)
+        [Obsolete(ExtensionPointObsoletionMessage)]
+        protected virtual void WriteDictionary(IReadOnlyDictionary<ScalarValue, LogEventPropertyValue> elements, TextWriter output)
         {
             output.Write("{");
             var delim = "";
@@ -322,10 +339,11 @@ namespace Serilog.Formatting.Json
             }
             output.Write("}");
         }
-        
+
         /// <summary>
         /// Writes out a json property with the specified value on output writer
         /// </summary>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected virtual void WriteJsonProperty(string name, object value, ref string precedingDelimiter, TextWriter output)
         {
             output.Write(precedingDelimiter);
@@ -341,6 +359,7 @@ namespace Serilog.Formatting.Json
         /// </summary>
         /// <param name="value">The value to be written as a json construct</param>
         /// <param name="output">The writer to write on</param>
+        [Obsolete(ExtensionPointObsoletionMessage)]
         protected virtual void WriteLiteralValue(object value, TextWriter output)
         {
             WriteString(value.ToString(), output);
@@ -382,6 +401,16 @@ namespace Serilog.Formatting.Json
             output.Write(value ? "true" : "false");
         }
 
+        static void WriteSingle(float value, TextWriter output)
+        {
+            output.Write(value.ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        static void WriteDouble(double value, TextWriter output)
+        {
+            output.Write(value.ToString("R", CultureInfo.InvariantCulture));
+        }
+
         static void WriteOffset(DateTimeOffset value, TextWriter output)
         {
             output.Write("\"");
@@ -398,10 +427,7 @@ namespace Serilog.Formatting.Json
 
         static void WriteString(string value, TextWriter output)
         {
-            var content = Escape(value);
-            output.Write("\"");
-            output.Write(content);
-            output.Write("\"");
+            JsonValueFormatter.WriteQuotedJsonString(value, output);
         }
 
         /// <summary>
@@ -409,75 +435,15 @@ namespace Serilog.Formatting.Json
         /// </summary>
         /// <param name="s">A raw string.</param>
         /// <returns>A JSON-escaped version of <paramref name="s"/>.</returns>
+        [Obsolete("Use JsonValueFormatter.WriteQuotedJsonString() instead."), EditorBrowsable(EditorBrowsableState.Never)]
         public static string Escape(string s)
         {
             if (s == null) return null;
 
-            StringBuilder escapedResult = null;
-            var cleanSegmentStart = 0;
-            for (var i = 0; i < s.Length; ++i)
-            {
-                var c = s[i];
-                if (c < (char)32 || c == '\\' || c == '"')
-                {
-
-                    if (escapedResult == null)
-                        escapedResult = new StringBuilder();
-
-                    escapedResult.Append(s.Substring(cleanSegmentStart, i - cleanSegmentStart));
-                    cleanSegmentStart = i + 1;
-
-                    switch (c)
-                    {
-                        case '"':
-                            {
-                                escapedResult.Append("\\\"");
-                                break;
-                            }
-                        case '\\':
-                            {
-                                escapedResult.Append("\\\\");
-                                break;
-                            }
-                        case '\n':
-                            {
-                                escapedResult.Append("\\n");
-                                break;
-                            }
-                        case '\r':
-                            {
-                                escapedResult.Append("\\r");
-                                break;
-                            }
-                        case '\f':
-                            {
-                                escapedResult.Append("\\f");
-                                break;
-                            }
-                        case '\t':
-                            {
-                                escapedResult.Append("\\t");
-                                break;
-                            }
-                        default:
-                            {
-                                escapedResult.Append("\\u");
-                                escapedResult.Append(((int)c).ToString("X4"));
-                                break;
-                            }
-                    }
-                }
-            }
-
-            if (escapedResult != null)
-            {
-                if (cleanSegmentStart != s.Length)
-                    escapedResult.Append(s.Substring(cleanSegmentStart));
-
-                return escapedResult.ToString();
-            }
-
-            return s;
+            var escapedResult = new StringWriter();
+            JsonValueFormatter.WriteQuotedJsonString(s, escapedResult);
+            var quoted = escapedResult.ToString();
+            return quoted.Substring(1, quoted.Length - 2);
         }
     }
 }

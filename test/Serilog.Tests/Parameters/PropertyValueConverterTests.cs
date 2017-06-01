@@ -12,7 +12,8 @@ namespace Serilog.Tests.Parameters
 {
     public class PropertyValueConverterTests
     {
-        readonly PropertyValueConverter _converter = new PropertyValueConverter(10, Enumerable.Empty<Type>(), Enumerable.Empty<IDestructuringPolicy>());
+        readonly PropertyValueConverter _converter = 
+            new PropertyValueConverter(10, 1000, 1000, Enumerable.Empty<Type>(), Enumerable.Empty<IDestructuringPolicy>(), false);
 
         [Fact]
         public void UnderDestructuringAByteArrayIsAScalarValue()
@@ -165,8 +166,18 @@ namespace Serilog.Tests.Parameters
         public void SurvivesDestructuringASystemType()
         {
             var pv = _converter.CreatePropertyValue(typeof(string), Destructuring.Destructure);
-            Assert.Equal(typeof(string), pv.LiteralValue()); 
+            Assert.Equal(typeof(string), pv.LiteralValue());
         }
+
+#if GETCURRENTMETHOD
+        [Fact]
+        public void SurvivesDestructuringMethodBase()
+        {
+            var theMethod = System.Reflection.MethodBase.GetCurrentMethod();
+            var pv = _converter.CreatePropertyValue(theMethod, Destructuring.Destructure);
+            Assert.Equal(theMethod, pv.LiteralValue());
+        }
+#endif
 
         public class BaseWithProps
         {
@@ -232,5 +243,16 @@ namespace Serilog.Tests.Parameters
             var item = pv.Properties.Single();
             Assert.Equal("Item", item.Name);
         }
+
+        [Fact]
+        public void CSharpAnonymousTypesAreRecognizedWhenDestructuring()
+        {
+            var o = new { Foo = "Bar" };
+            var result = _converter.CreatePropertyValue(o, true);
+            Assert.Equal(typeof(StructureValue), result.GetType());
+            var structuredValue = (StructureValue)result;
+            Assert.Equal(null, structuredValue.TypeTag);
+        }
     }
 }
+

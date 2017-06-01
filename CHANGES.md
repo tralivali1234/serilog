@@ -1,3 +1,64 @@
+2.4.0
+* #866 and #877- additional event payload limiting controls
+* #833 - improve performance of message template cache lookup
+* #885 - fix JSON formatting of `NaN` and infinity values
+* #888 - allow minimum level overrides to be specified by configuration providers like _Serilog.Settings.AppSettings_
+* #903 - add further `Log` static methods to match `ILogger` methods
+* #907 - properly dispose audit sinks
+* #913 - include commit hash in `AssemblyInformationalVersion`
+* #925 - allow configuration providers to specify `filter` directives
+* Build and test coverage work in #821, #824, #896.
+
+2.3.0
+ * #870 - fix dispose for level-restricted sinks
+ * #852 - fix dictionary capturing when key/value are anonymous types
+ * #835 - avoid `RemotingException` via `LogContext`
+ * #855 -  allow custom enum rendering (better `ICustomFormatter` support
+ * #841 - `audit-to` in key-value settings
+
+2.2.1
+ * #835 (fix for .NET 4.6+ only)
+
+2.2.0
+ * #826 - audit-style logging
+ * #819 - deprecate virtual extension points on JsonFormatter
+ 
+2.1.0
+ * #782 - provide `Destructure.ByTransformingWhere()`
+ * #779 - capture additional parameters even when template is malformed
+ * #798 - fix overload selection in `KeyValueSettings`
+ * #815 - allow level to be lowered by overrides, in addition to being raised
+
+2.0.0
+ * #535 - .NET Core support; split sinks, enrichers and settings providers into standalone packages; refactor to eliminate _Serilog.FullNetFx.dll_; remove .NET 4.0 support
+ * #566 - `Log.CloseAndFlush()`
+ * #561 - detect and throw exception if `LoggerConfiguration.CreateLogger()` is called more than once
+ * #617 - update project to use C# 6 where appropriate
+ * Use `R` round-trip formatting when converting floating point values to JSON
+ * #623 - [PeriodicBatchingSink](https://github.com/serilog/serilog-sinks-periodicbatching) - reduce contention when enqueueing events to `PeriodicBatchingSink`
+ * #618 - correctly handle VB.NET anonymous types when destructuring
+ * #636 - support more enrichment scenarios in `<appSettings>`
+ * #588 - enable `LogContext` on all target platforms
+ * #654 - improved `WriteTo.Logger()` level and switch handling
+ * #656 - [FileSink](https://github.com/serilog/serilog-sinks-file) - support buffered writes in file-based sinks
+ * #649 - [ColoredConsoleSink](https://github.com/serilog/serilog-sinks-coloredconsole) - do not print empty properties in colored console output
+ * #719 - concrete, `IDisposable` return value from `LoggerConfiguration.CreateLogger()`
+ * #727 - remove the unimplementable `IScalarConversionPolicy` interface
+ * #728 - allow user-specified destructuring of reflection types
+ * #711 and #765 - formatting for short, all-upper/all-lowercase and fixed-width level names in output templates
+ * #747 - `ForContext()` performance improvements
+ * #752 - zero-allocation generic methods on `ILogger` for up to three args
+ * #746 - add `BindMessageTemplate()` and `BindProperty()` to `ILogger` 
+ * #731 - `SelfLog` API improvements
+ * #754 - `MinimumLevel.Override()` per-source level overrides
+ * #770 - message template parser optimization
+ * #769 - _BenchmarkDotNet_ performance tests for solution
+ * #760 - TravisCI build on Mac OS and Linux
+ * #772 - included `LogEventPropertyValueVisitor` and `JsonValueFormatter`
+ * #776 - message template construction optimization
+ * #733 - use `ObjectHandle` to wrap `LogContext` stack on remoting-capable targets; allows cross-`AppDomain` calls without `Suspend()` or `PermitCrossAppDomainCalls`, both removed
+ * #781 - allow interface-typed values to be set in `<appSettings>` configuration by specifying an implementation type name
+
 1.5.14
  * #567 - allow literal formatting to be overridden in `JsonFormatter`
 

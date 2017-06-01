@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 // Copyright 2013-2015 Serilog Contributors
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,12 +17,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-#if NET40
-using IPropertyList = System.Collections.Generic.IList<Serilog.Events.LogEventProperty>;
-#else
-using IPropertyList = System.Collections.Generic.IReadOnlyList<Serilog.Events.LogEventProperty>;
-#endif
-
 namespace Serilog.Events
 {
     /// <summary>
@@ -30,7 +24,6 @@ namespace Serilog.Events
     /// </summary>
     public class StructureValue : LogEventPropertyValue
     {
-        readonly string _typeTag;
         readonly LogEventProperty[] _properties;
 
         /// <summary>
@@ -43,7 +36,7 @@ namespace Serilog.Events
         public StructureValue(IEnumerable<LogEventProperty> properties, string typeTag = null)
         {
             if (properties == null) throw new ArgumentNullException(nameof(properties));
-            _typeTag = typeTag;
+            TypeTag = typeTag;
             _properties = properties.ToArray();
         }
 
@@ -51,7 +44,7 @@ namespace Serilog.Events
         /// A piece of metadata describing the "type" of the
         /// structure, or null.
         /// </summary>
-        public string TypeTag { get { return _typeTag; } }
+        public string TypeTag { get; }
 
         /// <summary>
         /// The properties of the structure.
@@ -59,7 +52,7 @@ namespace Serilog.Events
         /// <remarks>Not presented as a dictionary because dictionary construction is
         /// relatively expensive; it is cheaper to build a dictionary over properties only
         /// when the structure is of interest.</remarks>
-        public IPropertyList Properties { get { return _properties; } }
+        public IReadOnlyList<LogEventProperty> Properties => _properties;
 
         /// <summary>
         /// Render the value to the output.
@@ -72,9 +65,9 @@ namespace Serilog.Events
         {
             if (output == null) throw new ArgumentNullException(nameof(output));
 
-            if (_typeTag != null)
+            if (TypeTag != null)
             {
-                output.Write(_typeTag);
+                output.Write(TypeTag);
                 output.Write(' ');
             }
             output.Write("{ ");
